@@ -1,0 +1,121 @@
+substitutions:
+  under_bed_light_timeout: 30min
+
+binary_sensor:
+  - platform: template
+    name: "${device_name} Connected"
+    id: ${device_id_prefix}_connected
+
+text_sensor:
+  - platform: template
+    name: "${device_name} MAC Address"
+    id: ${device_id_prefix}_mac_address
+  - platform: ble_client
+    ble_client_id: ${device_id_prefix}_ble_client
+    name: "${device_name} Manufacturer"
+    id: ${device_id_prefix}_manufacturer
+    service_uuid: "180A"
+    characteristic_uuid: "2A29"
+  - platform: ble_client
+    ble_client_id: ${device_id_prefix}_ble_client
+    name: "${device_name} Model Number"
+    id: ${device_id_prefix}_model_number
+    service_uuid: "180A"
+    characteristic_uuid: "2A24"
+  - platform: ble_client
+    ble_client_id: ${device_id_prefix}_ble_client
+    name: "${device_name} Serial Number"
+    id: ${device_id_prefix}_serial_number
+    service_uuid: "180A"
+    characteristic_uuid: "2A25"
+
+ble_client:
+  - mac_address: ${device_mac}
+    id: ${device_id_prefix}_ble_client
+    name: "${device_name}"
+    on_connect:
+      then:
+        - lambda: |-
+            ESP_LOGD("ble_client_lambda", "Connected to ${device_name} (${device_mac})");
+            id(${device_id_prefix}_mac_address).publish_state("${device_mac}");
+        - binary_sensor.template.publish:
+            id: ${device_id_prefix}_connected
+            state: True
+    on_disconnect:
+      then:
+        - lambda: |-
+            ESP_LOGD("ble_client_lambda", "Disconnected from ${device_name}");
+        - binary_sensor.template.publish:
+            id: ${device_id_prefix}_connected
+            state: False
+
+globals:
+  - id: ${device_id_prefix}_uder_bed_light_is_actually_on
+    type: bool
+    initial_value: "false"
+
+script:
+  - id: ${device_id_prefix}_under_under_bed_light_timeout_script
+    mode: restart
+    then:
+      - delay: ${under_bed_light_timeout}
+      - lambda: |-
+          ESP_LOGD("bed_light", "${device_name} light timed out internally.");
+          id(${device_id_prefix}_uder_bed_light_is_actually_on) = false;
+          if (id(${device_id_prefix}_under_bed_light).state != false) {
+            id(${device_id_prefix}_under_bed_light).publish_state(false);
+          }
+  - id: ${device_id_prefix}_toggle_under_bed_light_script
+    mode: queued
+    then:
+      - ble_client.ble_write:
+          id: ${device_id_prefix}_ble_client
+          service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
+          characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+          value: [0x04, 0x02, 0x00, 0x02, 0x00, 0x00]
+      - delay: 20ms
+      - ble_client.ble_write:
+          id: ${device_id_prefix}_ble_client
+          service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
+          characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+          value: [0x04, 0x02, 0x00, 0x00, 0x00, 0x00]
+      - delay: 20ms
+
+switch:
+  - platform: template
+    name: "${device_name} Under Bed Light"
+    id: ${device_id_prefix}_under_bed_light
+    icon: "mdi:lightbulb-outline"
+    lambda: |-
+      return id(${device_id_prefix}_uder_bed_light_is_actually_on);
+    turn_on_action:
+      # If the light is already on, we toggle it off and then back on
+      # to reset the timeout.
+      - if:
+          condition:
+            lambda: "return id(${device_id_prefix}_uder_bed_light_is_actually_on);"
+          then:
+            - script.execute: ${device_id_prefix}_toggle_under_bed_light_script
+      # Turn on the light and start the timeout script.
+      - script.execute: ${device_id_prefix}_toggle_under_bed_light_script
+      - lambda: |-
+          id(${device_id_prefix}_uder_bed_light_is_actually_on) = true;
+          if (id(${device_id_prefix}_under_bed_light).state != true) {
+            id(${device_id_prefix}_under_bed_light).publish_state(true);
+          }
+      - script.execute: ${device_id_prefix}_under_under_bed_light_timeout_script
+    turn_off_action:
+      # In contrast to light on, if the light is already off, there's no
+      # need to toggle it on and then back off since there's no built-in
+      # timeout.
+      - if:
+          condition:
+            lambda: "return id(${device_id_prefix}_uder_bed_light_is_actually_on);"
+          then:
+            - script.execute: ${device_id_prefix}_toggle_under_bed_light_script
+      - lambda: |-
+          id(${device_id_prefix}_uder_bed_light_is_actually_on) = false;
+          if (id(${device_id_prefix}_under_bed_light).state != false) {
+            id(${device_id_prefix}_under_bed_light).publish_state(false);
+          }
+      - script.stop: ${device_id_prefix}_under_under_bed_light_timeout_script
