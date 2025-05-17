@@ -13,6 +13,20 @@ wifi:
   password: !secret wifi_password
 logger:
 
+sensor:
+  - platform: uptime
+    name: Uptime
+  - platform: wifi_signal
+    name: Wi-Fi Signal
+
+text_sensor:
+  - platform: version
+    name: ESPHome Version
+
+button:
+  - platform: restart
+    name: Restart
+
 packages:
   esphome.bluetooth-proxy: github://esphome/bluetooth-proxies/esp32-generic/esp32-generic-c3.yaml@main
   left_bed: !include
