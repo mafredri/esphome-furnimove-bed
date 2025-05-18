@@ -13,3 +13,11 @@ Notably, this repository implements the FurniMove BLE control commands (remote [
   - Both up/down (0x05, 0x0A)
   - Memory 1/2 (0x1000, 0x2000)
 - Memory save (0x010000, then memory 1/2)
+
+## Pairing the bed
+
+1. Modify this configuration and enter your bed details.
+2. Flash the ESP32 with the ESPHome firmware and this configuration.
+3. Pull the power plug from the bed for 30 seconds or press a remote button to deplete the residual charge. (You may or may not need to unplug the beds backup battery.)
+4. Power the bed back on (it should be blinking indicating it's in pairing mode) and wait for the ESP32 to connect to the bed.
+5. Verify by viewing the ESP32 logs in the ESPHome dashboard.
