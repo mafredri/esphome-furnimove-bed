@@ -1,4 +1,6 @@
 substitutions:
+  service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
+  characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
   under_bed_light_timeout: 30min
 
 binary_sensor:
@@ -10,6 +12,13 @@ text_sensor:
   - platform: template
     name: "${device_name} MAC Address"
     id: ${device_id}_mac_address
+  - platform: ble_client
+    ble_client_id: ${device_id}_ble_client
+    name: "${device_name} Name"
+    id: ${device_id}_name
+    service_uuid: "1800"
+    characteristic_uuid: "2A00"
+    update_interval: never
   - platform: ble_client
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Manufacturer"
@@ -45,6 +54,7 @@ ble_client:
             id: ${device_id}_connected
             state: True
         - delay: 1s # Small delay to allow BLE services to stabilize.
+        - component.update: ${device_id}_name
         - component.update: ${device_id}_manufacturer
         - component.update: ${device_id}_model_number
         - component.update: ${device_id}_serial_number
@@ -83,8 +93,8 @@ script:
           then:
             - ble_client.ble_write:
                 id: ${device_id}_ble_client
-                service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
-                characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+                service_uuid: ${service_uuid}
+                characteristic_uuid: ${characteristic_uuid}
                 value: !lambda |-
                   std::vector<uint8_t> b = {0x04, 0x02, 0x00};
                   b.push_back((command >> 16) & 0xFF);
@@ -102,8 +112,8 @@ script:
                 then:
                   - ble_client.ble_write:
                       id: ${device_id}_ble_client
-                      service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
-                      characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+                      service_uuid: ${service_uuid}
+                      characteristic_uuid: ${characteristic_uuid}
                       value: !lambda |-
                         std::vector<uint8_t> b = {0x04, 0x02, 0x00};
                         b.push_back((command >> 16) & 0xFF);
@@ -118,8 +128,8 @@ script:
           then:
             - ble_client.ble_write:
                 id: ${device_id}_ble_client
-                service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
-                characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+                service_uuid: ${service_uuid}
+                characteristic_uuid: ${characteristic_uuid}
                 value: !lambda |-
                   std::vector<uint8_t> b = {0x04, 0x02, 0x00, 0x00, 0x00, 0x00};
                   ESP_LOGD("ble_write", "Writing no-op command: %s at %lu millis", format_hex_pretty(b).c_str(), millis());
