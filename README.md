@@ -2,7 +2,7 @@
 
 Sample ESPHome configuration for controlling [DewertOkin FurniMove](https://www.dewertokin.com/news/news/furnimove-bedding-app-with-a-new-name/) beds via Bluetooth and an ESP32.
 
-Notably, this repository implements the [RF-FLASHLINE](https://www.dewertokin.com/products/bedding/handsets/rf-flashline/) (94238) remote control commands for the [OKIMAT 4 RF BT MEMORY](https://www.dewertokin.com/products/bedding/double-drives-2/okimat-4-rf-systems/okimat-4-rf-bt-memory/) motor. If you have a different bed, you may need to adjust the commands, durations and repeats.
+Notably, this repository implements the FurniMove BLE control commands (remote [RF-FLASHLINE](https://www.dewertokin.com/products/bedding/handsets/rf-flashline/) (94238)) for the [OKIMAT 4 RF BT MEMORY](https://www.dewertokin.com/products/bedding/double-drives-2/okimat-4-rf-systems/okimat-4-rf-bt-memory/) motor. If you have a different bed, you may need to adjust the commands and durations.
 
 ## Features
 
