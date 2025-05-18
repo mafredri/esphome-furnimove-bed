@@ -33,13 +33,13 @@ packages:
     file: furnimove_bed_device.yaml
     vars:
       device_name: Left
-      device_id_prefix: left
+      device_id: left
       device_mac: 00:00:00:00:00:00
   right_bed: !include
     file: furnimove_bed_device.yaml
     vars:
       device_name: Right
-      device_id_prefix: right
+      device_id: right
       device_mac: AA:AA:AA:AA:AA:AA
 
 esp32_ble_tracker:

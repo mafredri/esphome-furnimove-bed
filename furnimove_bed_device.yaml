@@ -4,129 +4,347 @@ substitutions:
 binary_sensor:
   - platform: template
     name: "${device_name} Connected"
-    id: ${device_id_prefix}_connected
+    id: ${device_id}_connected
 
 text_sensor:
   - platform: template
     name: "${device_name} MAC Address"
-    id: ${device_id_prefix}_mac_address
+    id: ${device_id}_mac_address
   - platform: ble_client
-    ble_client_id: ${device_id_prefix}_ble_client
+    ble_client_id: ${device_id}_ble_client
     name: "${device_name} Manufacturer"
-    id: ${device_id_prefix}_manufacturer
+    id: ${device_id}_manufacturer
     service_uuid: "180A"
     characteristic_uuid: "2A29"
     update_interval: never
   - platform: ble_client
-    ble_client_id: ${device_id_prefix}_ble_client
+    ble_client_id: ${device_id}_ble_client
     name: "${device_name} Model Number"
-    id: ${device_id_prefix}_model_number
+    id: ${device_id}_model_number
     service_uuid: "180A"
     characteristic_uuid: "2A24"
     update_interval: never
   - platform: ble_client
-    ble_client_id: ${device_id_prefix}_ble_client
+    ble_client_id: ${device_id}_ble_client
     name: "${device_name} Serial Number"
-    id: ${device_id_prefix}_serial_number
+    id: ${device_id}_serial_number
     service_uuid: "180A"
     characteristic_uuid: "2A25"
     update_interval: never
 
 ble_client:
   - mac_address: ${device_mac}
-    id: ${device_id_prefix}_ble_client
+    id: ${device_id}_ble_client
     name: "${device_name}"
     on_connect:
       then:
         - lambda: |-
-            ESP_LOGD("ble_client_lambda", "Connected to ${device_name} (${device_mac})");
-            id(${device_id_prefix}_mac_address).publish_state("${device_mac}");
+            ESP_LOGD("ble_client", "Connected to ${device_name} (${device_mac})");
+            id(${device_id}_mac_address).publish_state("${device_mac}");
         - binary_sensor.template.publish:
-            id: ${device_id_prefix}_connected
+            id: ${device_id}_connected
             state: True
         - delay: 1s # Small delay to allow BLE services to stabilize.
-        - component.update: ${device_id_prefix}_manufacturer
-        - component.update: ${device_id_prefix}_model_number
-        - component.update: ${device_id_prefix}_serial_number
+        - component.update: ${device_id}_manufacturer
+        - component.update: ${device_id}_model_number
+        - component.update: ${device_id}_serial_number
     on_disconnect:
       then:
         - lambda: |-
-            ESP_LOGD("ble_client_lambda", "Disconnected from ${device_name}");
+            ESP_LOGD("ble_client", "Disconnected from ${device_name}");
         - binary_sensor.template.publish:
-            id: ${device_id_prefix}_connected
+            id: ${device_id}_connected
             state: False
 
 globals:
-  - id: ${device_id_prefix}_uder_bed_light_is_actually_on
+  - id: ${device_id}_uder_bed_light_is_actually_on
     type: bool
     initial_value: "false"
+  - id: ${device_id}_ble_write_loop_end_time
+    type: uint32_t
+    initial_value: "0"
 
 script:
-  - id: ${device_id_prefix}_under_under_bed_light_timeout_script
+  # The script to send commands to the bed, ensuring that the previous
+  # command has completed before sending the next one (or are stopped).
+  # If the command is not 0x00, it will be sent either once or in a loop
+  # for the specified duration. The script will also send a no-op command
+  # after the command has completed, to prevent the device from getting
+  # stuck repeating the last command.
+  - id: ${device_id}_ble_write
+    mode: queued
+    parameters:
+      command: int
+      duration_ms: int
+    then:
+      - if:
+          condition:
+            lambda: "return duration_ms == 0;"
+          then:
+            - ble_client.ble_write:
+                id: ${device_id}_ble_client
+                service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
+                characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+                value: !lambda |-
+                  std::vector<uint8_t> b = {0x04, 0x02, 0x00};
+                  b.push_back((command >> 16) & 0xFF);
+                  b.push_back((command >> 8) & 0xFF);
+                  b.push_back(command & 0xFF);
+                  ESP_LOGD("ble_write", "Writing command (once): %s at %lu millis", format_hex_pretty(b).c_str(), millis());
+                  return b;
+          else:
+            - lambda: |-
+                id(${device_id}_ble_write_loop_end_time) = millis() + duration_ms;
+                ESP_LOGD("ble_write", "Starting command %d loop for %d ms, ends at %u millis", command, duration_ms, id(${device_id}_ble_write_loop_end_time));
+            - while:
+                condition:
+                  lambda: "return millis() < id(${device_id}_ble_write_loop_end_time);"
+                then:
+                  - ble_client.ble_write:
+                      id: ${device_id}_ble_client
+                      service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
+                      characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+                      value: !lambda |-
+                        std::vector<uint8_t> b = {0x04, 0x02, 0x00};
+                        b.push_back((command >> 16) & 0xFF);
+                        b.push_back((command >> 8) & 0xFF);
+                        b.push_back(command & 0xFF);
+                        ESP_LOGD("ble_write", "Writing command (loop): %s at %lu millis, target_end: %u millis", format_hex_pretty(b).c_str(), millis(), id(${device_id}_ble_write_loop_end_time));
+                        return b;
+      # If the previous command wasn't the no-op command, send it now.
+      - if:
+          condition:
+            lambda: "return command != 0x00;"
+          then:
+            - ble_client.ble_write:
+                id: ${device_id}_ble_client
+                service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
+                characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
+                value: !lambda |-
+                  std::vector<uint8_t> b = {0x04, 0x02, 0x00, 0x00, 0x00, 0x00};
+                  ESP_LOGD("ble_write", "Writing no-op command: %s at %lu millis", format_hex_pretty(b).c_str(), millis());
+                  return b;
+
+  # The following scripts are used to control the under bed light,
+  # implementing state management and a timeout.
+  - id: ${device_id}_under_bed_light_timeout_script
     mode: restart
     then:
       - delay: ${under_bed_light_timeout}
       - lambda: |-
-          ESP_LOGD("bed_light", "${device_name} light timed out internally.");
-          id(${device_id_prefix}_uder_bed_light_is_actually_on) = false;
-          if (id(${device_id_prefix}_under_bed_light).state != false) {
-            id(${device_id_prefix}_under_bed_light).publish_state(false);
+          ESP_LOGD("under_bed_light", "${device_name} under bed light timed out internally.");
+          id(${device_id}_uder_bed_light_is_actually_on) = false;
+          if (id(${device_id}_under_bed_light).state != false) {
+            id(${device_id}_under_bed_light).publish_state(false);
           }
-  # The FurniMove app sends a no-op 0x00 command after actual commands
-  # have completed. This is most likely to prevent the the device from
-  # getting stuck repeating the last command over and over again.
-  # (Sometimes this actually happens when using the regular remote.)
-  - id: ${device_id_prefix}_toggle_under_bed_light_script
+  - id: ${device_id}_under_bed_light_toggle_script
     mode: queued
     then:
-      - ble_client.ble_write:
-          id: ${device_id_prefix}_ble_client
-          service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
-          characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
-          value: [0x04, 0x02, 0x00, 0x02, 0x00, 0x00]
-      - delay: 200ms
-      - ble_client.ble_write:
-          id: ${device_id_prefix}_ble_client
-          service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
-          characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
-          value: [0x04, 0x02, 0x00, 0x00, 0x00, 0x00]
-      - delay: 50ms
+      - lambda: |-
+          ESP_LOGD("under_bed_light", "${device_name} under bed light toggled.");
+      - script.execute: # Under bed light toggle.
+          id: ${device_id}_ble_write
+          command: 0x020000
+          duration_ms: 0
+      - script.wait: ${device_id}_ble_write
 
 switch:
+  # The under bed light is controlled by a switch, which is a template
+  # that uses the state of the light to determine if it is on or off.
   - platform: template
     name: "${device_name} Under Bed Light"
-    id: ${device_id_prefix}_under_bed_light
+    id: ${device_id}_under_bed_light
     icon: "mdi:lightbulb-outline"
     lambda: |-
-      return id(${device_id_prefix}_uder_bed_light_is_actually_on);
+      return id(${device_id}_uder_bed_light_is_actually_on);
     turn_on_action:
       # If the light is already on, we toggle it off and then back on
       # to reset the timeout.
       - if:
           condition:
-            lambda: "return id(${device_id_prefix}_uder_bed_light_is_actually_on);"
+            lambda: "return id(${device_id}_uder_bed_light_is_actually_on);"
           then:
-            - script.execute: ${device_id_prefix}_toggle_under_bed_light_script
-      # Turn on the light and start the timeout script.
-      - script.execute: ${device_id_prefix}_toggle_under_bed_light_script
+            - script.execute: ${device_id}_under_bed_light_toggle_script
+      - script.execute: ${device_id}_under_bed_light_toggle_script
       - lambda: |-
-          id(${device_id_prefix}_uder_bed_light_is_actually_on) = true;
-          if (id(${device_id_prefix}_under_bed_light).state != true) {
-            id(${device_id_prefix}_under_bed_light).publish_state(true);
+          id(${device_id}_uder_bed_light_is_actually_on) = true;
+          if (id(${device_id}_under_bed_light).state != true) {
+            id(${device_id}_under_bed_light).publish_state(true);
           }
-      - script.execute: ${device_id_prefix}_under_under_bed_light_timeout_script
+      - script.execute: ${device_id}_under_bed_light_timeout_script
     turn_off_action:
       # In contrast to light on, if the light is already off, there's no
       # need to toggle it on and then back off since there's no built-in
       # timeout.
       - if:
           condition:
-            lambda: "return id(${device_id_prefix}_uder_bed_light_is_actually_on);"
+            lambda: "return id(${device_id}_uder_bed_light_is_actually_on);"
           then:
-            - script.execute: ${device_id_prefix}_toggle_under_bed_light_script
+            - script.execute: ${device_id}_under_bed_light_toggle_script
       - lambda: |-
-          id(${device_id_prefix}_uder_bed_light_is_actually_on) = false;
-          if (id(${device_id_prefix}_under_bed_light).state != false) {
-            id(${device_id_prefix}_under_bed_light).publish_state(false);
+          id(${device_id}_uder_bed_light_is_actually_on) = false;
+          if (id(${device_id}_under_bed_light).state != false) {
+            id(${device_id}_under_bed_light).publish_state(false);
           }
-      - script.stop: ${device_id_prefix}_under_under_bed_light_timeout_script
+      - script.stop: ${device_id}_under_bed_light_timeout_script
+
+cover:
+  - platform: template
+    name: "${device_name} Head"
+    id: ${device_id}_head_cover
+    icon: "mdi:bed"
+    optimistic: true
+    assumed_state: true
+    open_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Head up.
+          id: ${device_id}_ble_write
+          command: 0x01
+          duration_ms: 15000
+    close_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Head down.
+          id: ${device_id}_ble_write
+          command: 0x02
+          duration_ms: 15000
+    stop_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # No-op.
+          id: ${device_id}_ble_write
+          command: 0x00
+          duration_ms: 0
+
+  - platform: template
+    name: "${device_name} Legs"
+    id: ${device_id}_legs_cover
+    icon: "mdi:bed"
+    optimistic: true
+    assumed_state: true
+    open_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Legs up.
+          id: ${device_id}_ble_write
+          command: 0x04
+          duration_ms: 15000
+    close_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Legs down.
+          id: ${device_id}_ble_write
+          command: 0x08
+          duration_ms: 15000
+    stop_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # No-op.
+          id: ${device_id}_ble_write
+          command: 0x00
+          duration_ms: 0
+
+  - platform: template
+    name: "${device_name} Both"
+    id: ${device_id}_both_cover
+    icon: "mdi:bed"
+    optimistic: true
+    assumed_state: true
+    open_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Both up.
+          id: ${device_id}_ble_write
+          command: 0x05
+          duration_ms: 15000
+    close_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Both down.
+          id: ${device_id}_ble_write
+          command: 0x0A
+          duration_ms: 15000
+    stop_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # No-op.
+          id: ${device_id}_ble_write
+          command: 0x00
+          duration_ms: 0
+
+  - platform: template
+    name: "${device_name} Memory 1"
+    id: ${device_id}_memory_1_cover
+    icon: "mdi:bed"
+    optimistic: true
+    assumed_state: true
+    open_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Recall memory 1.
+          id: ${device_id}_ble_write
+          command: 0x1000
+          duration_ms: 15000
+    close_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Same as "Both down".
+          id: ${device_id}_ble_write
+          command: 0x0A
+          duration_ms: 15000
+    stop_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # No-op.
+          id: ${device_id}_ble_write
+          command: 0x00
+          duration_ms: 0
+
+  - platform: template
+    name: "${device_name} Memory 2"
+    id: ${device_id}_memory_2_cover
+    icon: "mdi:bed"
+    optimistic: true
+    assumed_state: true
+    open_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Recall memory 2.
+          id: ${device_id}_ble_write
+          command: 0x2000
+          duration_ms: 15000
+    close_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # Same as "Both down".
+          id: ${device_id}_ble_write
+          command: 0x0A
+          duration_ms: 15000
+    stop_action:
+      - script.stop: ${device_id}_ble_write
+      - script.execute: # No-op.
+          id: ${device_id}_ble_write
+          command: 0x00
+          duration_ms: 0
+
+button:
+  - platform: template
+    name: "${device_name} Save to Memory 1"
+    id: ${device_id}_save_memory_1_button
+    icon: "mdi:content-save"
+    on_press:
+      then:
+        - script.stop: ${device_id}_ble_write
+        - script.execute: # Enter save memory mode.
+            id: ${device_id}_ble_write
+            command: 0x010000
+            duration_ms: 0
+        - script.wait: ${device_id}_ble_write
+        - script.execute: # Save memory 1.
+            id: ${device_id}_ble_write
+            command: 0x1000
+            duration_ms: 0
+
+  - platform: template
+    name: "${device_name} Save to Memory 2"
+    id: ${device_id}_save_memory_2_button
+    icon: "mdi:content-save"
+    on_press:
+      then:
+        - script.stop: ${device_id}_ble_write
+        - script.execute: # Enter save memory mode.
+            id: ${device_id}_ble_write
+            command: 0x010000
+            duration_ms: 0
+        - script.wait: ${device_id}_ble_write
+        - script.execute: # Save memory 2.
+            id: ${device_id}_ble_write
+            command: 0x2000
+            duration_ms: 0

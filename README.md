@@ -6,14 +6,10 @@ Notably, this repository implements the [RF-FLASHLINE](https://www.dewertokin.co
 
 ## Features
 
-### Implemented
-
 - State aware control of under bed lighting (0x020000)
-
-### TODO
-
-- Back up/down (0x01, 0x02)
-- Legs up/down (0x04, 0x08)
-- Both up/down (0x05, 0x0A)
-- Memory 1/2 (0x1000, 0x2000)
-- Memory save (0x010000 for 5 seconds, then memory 1/2)
+- Interruptable motor control (as covers)
+  - Head up/down (0x01, 0x02)
+  - Legs up/down (0x04, 0x08)
+  - Both up/down (0x05, 0x0A)
+  - Memory 1/2 (0x1000, 0x2000)
+- Memory save (0x010000, then memory 1/2)
