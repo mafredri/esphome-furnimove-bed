@@ -2,6 +2,7 @@ substitutions:
   service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
   characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
   under_bed_light_timeout: 30min
+  movement_full_range_ms: 20000
 
 esphome:
   devices:
@@ -230,13 +231,13 @@ cover:
       - script.execute: # Head up.
           id: ${device_id}_ble_write
           command: 0x01
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     close_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Head down.
           id: ${device_id}_ble_write
           command: 0x02
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     stop_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # No-op.
@@ -256,13 +257,13 @@ cover:
       - script.execute: # Legs up.
           id: ${device_id}_ble_write
           command: 0x04
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     close_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Legs down.
           id: ${device_id}_ble_write
           command: 0x08
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     stop_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # No-op.
@@ -282,13 +283,13 @@ cover:
       - script.execute: # Both up.
           id: ${device_id}_ble_write
           command: 0x05
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     close_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Both down.
           id: ${device_id}_ble_write
           command: 0x0A
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     stop_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # No-op.
@@ -308,13 +309,13 @@ cover:
       - script.execute: # Recall memory 1.
           id: ${device_id}_ble_write
           command: 0x1000
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     close_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Same as "Both down".
           id: ${device_id}_ble_write
           command: 0x0A
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     stop_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # No-op.
@@ -334,13 +335,13 @@ cover:
       - script.execute: # Recall memory 2.
           id: ${device_id}_ble_write
           command: 0x2000
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     close_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Same as "Both down".
           id: ${device_id}_ble_write
           command: 0x0A
-          duration_ms: 15000
+          duration_ms: ${movement_full_range_ms}
     stop_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # No-op.
