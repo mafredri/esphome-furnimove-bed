@@ -3,19 +3,31 @@ substitutions:
   characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
   under_bed_light_timeout: 30min
 
+esphome:
+  devices:
+    - id: ${device_id}_bed_device
+      name: "${device_name} Bed"
+      area_id: ${area_id}
+
 binary_sensor:
   - platform: template
     name: "${device_name} Connected"
     id: ${device_id}_connected
+    device_id: ${device_id}_bed_device
+    icon: "mdi:bluetooth-connect"
 
 text_sensor:
   - platform: template
     name: "${device_name} MAC Address"
     id: ${device_id}_mac_address
+    device_id: ${device_id}_bed_device
+    icon: "mdi:bluetooth"
   - platform: ble_client
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Name"
     id: ${device_id}_name
+    device_id: ${device_id}_bed_device
+    icon: "mdi:bluetooth"
     service_uuid: "1800"
     characteristic_uuid: "2A00"
     update_interval: never
@@ -23,6 +35,8 @@ text_sensor:
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Manufacturer"
     id: ${device_id}_manufacturer
+    device_id: ${device_id}_bed_device
+    icon: "mdi:bluetooth"
     service_uuid: "180A"
     characteristic_uuid: "2A29"
     update_interval: never
@@ -30,6 +44,8 @@ text_sensor:
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Model Number"
     id: ${device_id}_model_number
+    device_id: ${device_id}_bed_device
+    icon: "mdi:bluetooth"
     service_uuid: "180A"
     characteristic_uuid: "2A24"
     update_interval: never
@@ -37,6 +53,8 @@ text_sensor:
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Serial Number"
     id: ${device_id}_serial_number
+    device_id: ${device_id}_bed_device
+    icon: "mdi:bluetooth"
     service_uuid: "180A"
     characteristic_uuid: "2A25"
     update_interval: never
@@ -164,6 +182,7 @@ switch:
   - platform: template
     name: "${device_name} Under Bed Light"
     id: ${device_id}_under_bed_light
+    device_id: ${device_id}_bed_device
     icon: "mdi:lightbulb-outline"
     lambda: |-
       return id(${device_id}_uder_bed_light_is_actually_on);
@@ -202,6 +221,7 @@ cover:
   - platform: template
     name: "${device_name} Head"
     id: ${device_id}_head_cover
+    device_id: ${device_id}_bed_device
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
@@ -227,6 +247,7 @@ cover:
   - platform: template
     name: "${device_name} Legs"
     id: ${device_id}_legs_cover
+    device_id: ${device_id}_bed_device
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
@@ -252,6 +273,7 @@ cover:
   - platform: template
     name: "${device_name} Both"
     id: ${device_id}_both_cover
+    device_id: ${device_id}_bed_device
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
@@ -277,6 +299,7 @@ cover:
   - platform: template
     name: "${device_name} Memory 1"
     id: ${device_id}_memory_1_cover
+    device_id: ${device_id}_bed_device
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
@@ -302,6 +325,7 @@ cover:
   - platform: template
     name: "${device_name} Memory 2"
     id: ${device_id}_memory_2_cover
+    device_id: ${device_id}_bed_device
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
@@ -328,6 +352,7 @@ button:
   - platform: template
     name: "${device_name} Save to Memory 1"
     id: ${device_id}_save_memory_1_button
+    device_id: ${device_id}_bed_device
     icon: "mdi:content-save"
     on_press:
       then:
@@ -345,6 +370,7 @@ button:
   - platform: template
     name: "${device_name} Save to Memory 2"
     id: ${device_id}_save_memory_2_button
+    device_id: ${device_id}_bed_device
     icon: "mdi:content-save"
     on_press:
       then:

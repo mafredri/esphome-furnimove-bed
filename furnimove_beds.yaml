@@ -5,6 +5,9 @@ esphome:
   name: ${name}
   name_add_mac_suffix: false
   friendly_name: ${friendly_name}
+  areas:
+    - id: bedroom_area
+      name: Bedroom
 api:
   encryption:
     key: !secret bedroom_bed_api_encryption_key
@@ -35,12 +38,14 @@ packages:
       device_name: Left
       device_id: left
       device_mac: 00:00:00:00:00:00
+      area_id: bedroom_area
   right_bed: !include
     file: furnimove_bed_device.yaml
     vars:
       device_name: Right
       device_id: right
       device_mac: AA:AA:AA:AA:AA:AA
+      area_id: bedroom_area
 
 esp32_ble_tracker:
   # Optional debugging.
