@@ -70,14 +70,6 @@ sensor:
       sorting_group_id: system_info
       sorting_weight: 20
 
-text_sensor:
-  - platform: version
-    name: ESPHome Version
-    entity_category: diagnostic
-    web_server:
-      sorting_group_id: system_info
-      sorting_weight: 30
-
 button:
   - platform: restart
     name: Restart
