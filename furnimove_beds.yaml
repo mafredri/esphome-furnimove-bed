@@ -47,6 +47,10 @@ packages:
       device_mac: AA:AA:AA:AA:AA:AA
       area_id: bedroom_area
 
+esp32_ble:
+  max_connections: 5
+  connection_timeout: 10s
+
 esp32_ble_tracker:
   # Optional debugging.
   on_ble_advertise:
