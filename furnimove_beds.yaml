@@ -8,12 +8,19 @@ esphome:
   areas:
     - id: bedroom_area
       name: Bedroom
+
 api:
   encryption:
     key: !secret bedroom_bed_api_encryption_key
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+
 logger:
 
 web_server:
@@ -50,6 +57,7 @@ packages:
 sensor:
   - platform: uptime
     name: Uptime
+    type: timestamp
     entity_category: diagnostic
     web_server:
       sorting_group_id: system_info
