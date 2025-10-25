@@ -1,6 +1,7 @@
 substitutions:
-  name: esp32-bedroom-bed
-  friendly_name: Bedroom Bed
+  name: esphome-bedroom-bed
+  friendly_name: ESPHome Bedroom Bed
+
 esphome:
   name: ${name}
   name_add_mac_suffix: false
