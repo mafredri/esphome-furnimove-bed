@@ -16,6 +16,10 @@ binary_sensor:
     id: ${device_id}_connected
     device_id: ${device_id}_bed_device
     icon: "mdi:bluetooth-connect"
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: bed_info
+      sorting_weight: 10
 
 text_sensor:
   - platform: template
@@ -23,6 +27,10 @@ text_sensor:
     id: ${device_id}_mac_address
     device_id: ${device_id}_bed_device
     icon: "mdi:bluetooth"
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: bed_info
+      sorting_weight: 20
   - platform: ble_client
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Name"
@@ -32,6 +40,10 @@ text_sensor:
     service_uuid: "1800"
     characteristic_uuid: "2A00"
     update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: bed_info
+      sorting_weight: 30
   - platform: ble_client
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Manufacturer"
@@ -41,6 +53,10 @@ text_sensor:
     service_uuid: "180A"
     characteristic_uuid: "2A29"
     update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: bed_info
+      sorting_weight: 40
   - platform: ble_client
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Model Number"
@@ -50,6 +66,10 @@ text_sensor:
     service_uuid: "180A"
     characteristic_uuid: "2A24"
     update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: bed_info
+      sorting_weight: 50
   - platform: ble_client
     ble_client_id: ${device_id}_ble_client
     name: "${device_name} Serial Number"
@@ -59,6 +79,10 @@ text_sensor:
     service_uuid: "180A"
     characteristic_uuid: "2A25"
     update_interval: never
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: bed_info
+      sorting_weight: 60
 
 ble_client:
   - mac_address: ${device_mac}
@@ -185,6 +209,9 @@ switch:
     id: ${device_id}_under_bed_light
     device_id: ${device_id}_bed_device
     icon: "mdi:lightbulb-outline"
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 10
     lambda: |-
       return id(${device_id}_uder_bed_light_is_actually_on);
     turn_on_action:
@@ -226,6 +253,9 @@ cover:
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 20
     open_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Head up.
@@ -252,6 +282,9 @@ cover:
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 30
     open_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Legs up.
@@ -278,6 +311,9 @@ cover:
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 40
     open_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Both up.
@@ -304,6 +340,9 @@ cover:
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 50
     open_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Recall memory 1.
@@ -330,6 +369,9 @@ cover:
     icon: "mdi:bed"
     optimistic: true
     assumed_state: true
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 60
     open_action:
       - script.stop: ${device_id}_ble_write
       - script.execute: # Recall memory 2.
@@ -355,6 +397,9 @@ button:
     id: ${device_id}_save_memory_1_button
     device_id: ${device_id}_bed_device
     icon: "mdi:content-save"
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 70
     on_press:
       then:
         - script.stop: ${device_id}_ble_write
@@ -373,6 +418,9 @@ button:
     id: ${device_id}_save_memory_2_button
     device_id: ${device_id}_bed_device
     icon: "mdi:content-save"
+    web_server:
+      sorting_group_id: bed_controls
+      sorting_weight: 80
     on_press:
       then:
         - script.stop: ${device_id}_ble_write
