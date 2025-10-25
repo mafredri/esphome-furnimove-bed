@@ -22,6 +22,14 @@ wifi:
   password: !secret wifi_password
 
 logger:
+  level: INFO
+  logs:
+    ble_client: INFO
+    ble_adv: WARN
+    ble_write: INFO
+    under_bed_light: INFO
+    component: WARN
+    wifi: INFO
 
 web_server:
   port: 80
@@ -95,16 +103,16 @@ esp32_ble:
   connection_timeout: 10s
 
 esp32_ble_tracker:
-  # Optional debugging.
   on_ble_advertise:
     - mac_address:
         - 00:00:00:00:00:00
         - AA:AA:AA:AA:AA:AA
       then:
         - lambda: |-
-            ESP_LOGD("ble_adv", "New BLE device");
-            ESP_LOGD("ble_adv", "  address: %s", x.address_str().c_str());
-            ESP_LOGD("ble_adv", "  name: %s", x.get_name().c_str());
+            ESP_LOGI("ble_adv", "Bed BLE device detected");
+            ESP_LOGI("ble_adv", "  Address: %s", x.address_str().c_str());
+            ESP_LOGI("ble_adv", "  Name: %s", x.get_name().c_str());
+            ESP_LOGI("ble_adv", "  RSSI: %d dBm", x.get_rssi());
             ESP_LOGD("ble_adv", "  Advertised service UUIDs:");
             for (auto uuid : x.get_service_uuids()) {
                 ESP_LOGD("ble_adv", "    - %s", uuid.to_string().c_str());

@@ -88,10 +88,11 @@ ble_client:
   - mac_address: ${device_mac}
     id: ${device_id}_ble_client
     name: "${device_name}"
+    auto_connect: true
     on_connect:
       then:
         - lambda: |-
-            ESP_LOGD("ble_client", "Connected to ${device_name} (${device_mac})");
+            ESP_LOGI("ble_client", "Connected to ${device_name} (${device_mac})");
             id(${device_id}_mac_address).publish_state("${device_mac}");
         - binary_sensor.template.publish:
             id: ${device_id}_connected
@@ -104,7 +105,7 @@ ble_client:
     on_disconnect:
       then:
         - lambda: |-
-            ESP_LOGD("ble_client", "Disconnected from ${device_name}");
+            ESP_LOGW("ble_client", "Disconnected from ${device_name}");
         - binary_sensor.template.publish:
             id: ${device_id}_connected
             state: False
@@ -130,6 +131,12 @@ script:
       command: int
       duration_ms: int
     then:
+      - lambda: |-
+          if (!id(${device_id}_ble_client).connected()) {
+            ESP_LOGW("ble_write", "[${device_name}] Cannot send command 0x%X: BLE not connected", command);
+            return;
+          }
+          ESP_LOGI("ble_write", "[${device_name}] Sending command 0x%X, duration: %d ms", command, duration_ms);
       - if:
           condition:
             lambda: "return duration_ms == 0;"
@@ -143,15 +150,20 @@ script:
                   b.push_back((command >> 16) & 0xFF);
                   b.push_back((command >> 8) & 0xFF);
                   b.push_back(command & 0xFF);
-                  ESP_LOGD("ble_write", "Writing command (once): %s at %lu millis", format_hex_pretty(b).c_str(), millis());
+                  ESP_LOGD("ble_write", "[${device_name}] Writing command (once): %s at %lu millis", format_hex_pretty(b).c_str(), millis());
                   return b;
           else:
             - lambda: |-
                 id(${device_id}_ble_write_loop_end_time) = millis() + duration_ms;
-                ESP_LOGD("ble_write", "Starting command %d loop for %d ms, ends at %u millis", command, duration_ms, id(${device_id}_ble_write_loop_end_time));
+                ESP_LOGD("ble_write", "[${device_name}] Starting command 0x%X loop for %d ms, ends at %u millis", command, duration_ms, id(${device_id}_ble_write_loop_end_time));
             - while:
                 condition:
-                  lambda: "return millis() < id(${device_id}_ble_write_loop_end_time);"
+                  lambda: |-
+                    if (!id(${device_id}_ble_client).connected()) {
+                      ESP_LOGW("ble_write", "[${device_name}] Loop interrupted: BLE disconnected");
+                      return false;
+                    }
+                    return millis() < id(${device_id}_ble_write_loop_end_time);
                 then:
                   - ble_client.ble_write:
                       id: ${device_id}_ble_client
@@ -162,12 +174,22 @@ script:
                         b.push_back((command >> 16) & 0xFF);
                         b.push_back((command >> 8) & 0xFF);
                         b.push_back(command & 0xFF);
-                        ESP_LOGD("ble_write", "Writing command (loop): %s at %lu millis, target_end: %u millis", format_hex_pretty(b).c_str(), millis(), id(${device_id}_ble_write_loop_end_time));
+                        ESP_LOGV("ble_write", "[${device_name}] Writing command (loop): %s at %lu millis", format_hex_pretty(b).c_str(), millis());
                         return b;
+            - lambda: |-
+                ESP_LOGD("ble_write", "[${device_name}] Command 0x%X loop completed", command);
       # If the previous command wasn't the no-op command, send it now.
       - if:
           condition:
-            lambda: "return command != 0x00;"
+            lambda: |-
+              if (command == 0x00) {
+                return false;
+              }
+              if (!id(${device_id}_ble_client).connected()) {
+                ESP_LOGW("ble_write", "[${device_name}] Cannot send no-op command: BLE disconnected");
+                return false;
+              }
+              return true;
           then:
             - ble_client.ble_write:
                 id: ${device_id}_ble_client
@@ -175,8 +197,10 @@ script:
                 characteristic_uuid: ${characteristic_uuid}
                 value: !lambda |-
                   std::vector<uint8_t> b = {0x04, 0x02, 0x00, 0x00, 0x00, 0x00};
-                  ESP_LOGD("ble_write", "Writing no-op command: %s at %lu millis", format_hex_pretty(b).c_str(), millis());
+                  ESP_LOGD("ble_write", "[${device_name}] Writing no-op command: %s at %lu millis", format_hex_pretty(b).c_str(), millis());
                   return b;
+            - lambda: |-
+                ESP_LOGI("ble_write", "[${device_name}] Command 0x%X completed successfully", command);
 
   # The following scripts are used to control the under bed light,
   # implementing state management and a timeout.
@@ -185,7 +209,7 @@ script:
     then:
       - delay: ${under_bed_light_timeout}
       - lambda: |-
-          ESP_LOGD("under_bed_light", "${device_name} under bed light timed out internally.");
+          ESP_LOGI("under_bed_light", "[${device_name}] Under bed light timed out after ${under_bed_light_timeout}");
           id(${device_id}_uder_bed_light_is_actually_on) = false;
           if (id(${device_id}_under_bed_light).state != false) {
             id(${device_id}_under_bed_light).publish_state(false);
@@ -194,7 +218,11 @@ script:
     mode: queued
     then:
       - lambda: |-
-          ESP_LOGD("under_bed_light", "${device_name} under bed light toggled.");
+          if (!id(${device_id}_ble_client).connected()) {
+            ESP_LOGW("under_bed_light", "[${device_name}] Cannot toggle light: BLE not connected");
+            return;
+          }
+          ESP_LOGD("under_bed_light", "[${device_name}] Toggling under bed light");
       - script.execute: # Under bed light toggle.
           id: ${device_id}_ble_write
           command: 0x020000
