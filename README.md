@@ -75,7 +75,7 @@ Tooling is managed with [mise](https://mise.jdx.dev/):
 
 ```sh
 mise run setup     # install tools and the git pre-commit hook
-mise run lint      # yamllint, actionlint, gitleaks
+mise run lint      # yamllint, jactionlint, gitleaks
 mise run validate  # esphome config for tests/*.yaml
 mise run build     # esphome compile for tests/*.yaml
 ```

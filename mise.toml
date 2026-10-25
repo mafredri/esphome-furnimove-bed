@@ -5,8 +5,8 @@ uv = "0.13.5"
 "pipx:esphome" = "2026.10.0"
 yamllint = "1.38.0"
 gitleaks = "8.30.1"
-actionlint = "1.7.12"
-shellcheck = "0.11.0" # Used by actionlint.
+jactionlint = "2.3.0"
+shellcheck = "0.11.0" # Used by jactionlint.
 
 [settings]
 pipx.uvx = true
@@ -27,7 +27,7 @@ run = [
 description = "Lint YAML and GitHub workflows, scan for leaked secrets"
 run = [
   "yamllint --strict .",
-  "actionlint",
+  "jactionlint",
   "gitleaks git --no-banner --redact",
   # Staged changes, so leaks are caught before they're committed.
   "gitleaks git --no-banner --redact --pre-commit --staged",
