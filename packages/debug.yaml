@@ -1,0 +1,19 @@
+# Optional: troubleshooting logs, including every BLE write and
+# advertisement. Adds a "Logger Level" select to lower the level at
+# runtime without reflashing.
+logger:
+  level: VERBOSE
+  logs:
+    # Keep chatty core components quiet so the bed logs stay readable.
+    component: WARN
+    sensor: INFO
+    wifi: INFO
+    api: DEBUG
+
+select:
+  - platform: logger
+    name: Logger Level
+    entity_category: config
+    web_server:
+      sorting_group_id: system_info
+      sorting_weight: 70

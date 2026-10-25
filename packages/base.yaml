@@ -1,0 +1,95 @@
+# Shared configuration for an ESP32 controlling one or more FurniMove beds.
+# Combine with a board package (packages/boards/*.yaml) and one
+# packages/bed.yaml per bed. Secrets (Wi-Fi, API key) are set in the
+# device configuration, see examples/bedroom-bed.yaml.
+
+substitutions:
+  name: furnimove-bed
+  friendly_name: FurniMove Bed
+  area_name: Bedroom
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2026.8.0
+  areas:
+    - id: bed_area
+      name: ${area_name}
+
+api:
+
+ota:
+  - platform: esphome
+    id: ota_esphome
+
+wifi:
+  ap:
+
+# Production logging: connection changes, commands and warnings only.
+# Add packages/debug.yaml for troubleshooting.
+logger:
+  level: INFO
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+web_server:
+  port: 80
+  version: 3
+  sorting_groups:
+    - id: bed_controls
+      name: Bed Controls
+      sorting_weight: 10
+    - id: bed_info
+      name: Bed Information
+      sorting_weight: 20
+    - id: system_info
+      name: System
+      sorting_weight: 30
+
+sensor:
+  - platform: uptime
+    id: uptime_timestamp
+    name: Uptime
+    type: timestamp
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: system_info
+      sorting_weight: 10
+  - platform: wifi_signal
+    name: Wi-Fi Signal
+    entity_category: diagnostic
+    update_interval: 60s
+    web_server:
+      sorting_group_id: system_info
+      sorting_weight: 20
+
+button:
+  - platform: restart
+    id: button_restart
+    name: Restart
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: system_info
+      sorting_weight: 40
+  - platform: safe_mode
+    id: button_safe_mode
+    name: Safe Mode Boot
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: system_info
+      sorting_weight: 50
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: Factory reset
+    entity_category: diagnostic
+    web_server:
+      sorting_group_id: system_info
+      sorting_weight: 60
+
+esp32_ble:
+  max_connections: 5
+  connection_timeout: 10s
+
+esp32_ble_tracker:

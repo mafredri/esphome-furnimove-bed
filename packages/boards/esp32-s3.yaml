@@ -1,0 +1,5 @@
+# Generic esp32s3 board using the ESP-IDF framework.
+esp32:
+  variant: esp32s3
+  framework:
+    type: esp-idf

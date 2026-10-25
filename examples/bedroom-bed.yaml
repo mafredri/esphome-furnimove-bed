@@ -1,0 +1,36 @@
+# Example device configuration for the ESPHome dashboard. Copy this file
+# into your ESPHome configuration directory and add the secrets from
+# secrets.example.yaml to your ESPHome secrets.yaml.
+substitutions:
+  name: bedroom-bed
+  friendly_name: Bedroom Bed
+  area_name: Bedroom
+
+packages:
+  furnimove:
+    url: https://github.com/mafredri/esphome-furnimove-bed
+    ref: main # Pin to a release tag for stable updates.
+    refresh: 1d
+    files:
+      - packages/base.yaml
+      - packages/boards/esp32-c3.yaml
+      # - packages/bluetooth_proxy.yaml # Also act as a Bluetooth proxy.
+      # - packages/debug.yaml # Verbose logs for troubleshooting.
+      - path: packages/bed.yaml
+        vars:
+          device_name: Left
+          device_id: left
+          device_mac: !secret left_bed_mac
+      - path: packages/bed.yaml
+        vars:
+          device_name: Right
+          device_id: right
+          device_mac: !secret right_bed_mac
+
+api:
+  encryption:
+    key: !secret bedroom_bed_api_encryption_key
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password

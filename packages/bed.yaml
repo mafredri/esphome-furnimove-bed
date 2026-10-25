@@ -1,4 +1,12 @@
+# One FurniMove bed (OKIMAT 4 RF BT MEMORY motor) controlled over BLE.
+# Include once per bed with these vars:
+#   device_name: Display name prefix for entities, e.g. "Left".
+#   device_id:   Unique C++-safe id prefix, e.g. "left".
+#   device_mac:  Bluetooth MAC address of the bed motor.
+#   area_id:     Optional, defaults to the area from packages/base.yaml.
+
 substitutions:
+  area_id: bed_area
   service_uuid: "62741523-52F9-8864-B1AB-3B3A8D65950B"
   characteristic_uuid: "62741525-52F9-8864-B1AB-3B3A8D65950B"
   under_bed_light_timeout: 30min
@@ -109,6 +117,17 @@ ble_client:
         - binary_sensor.template.publish:
             id: ${device_id}_connected
             state: False
+
+esp32_ble_tracker:
+  on_ble_advertise:
+    - mac_address: ${device_mac}
+      then:
+        - lambda: |-
+            ESP_LOGD("ble_adv", "[${device_name}] Advertisement: name '%s', RSSI %d dBm", x.get_name().c_str(), x.get_rssi());
+            char uuid_buf[ble_device_base::UUID_STR_LEN];
+            for (auto uuid : x.get_service_uuids()) {
+              ESP_LOGV("ble_adv", "[${device_name}]   Service UUID: %s", uuid.to_str(uuid_buf));
+            }
 
 globals:
   - id: ${device_id}_uder_bed_light_is_actually_on

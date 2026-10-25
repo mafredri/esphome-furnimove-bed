@@ -1,1 +1,16 @@
+# Secrets and private configuration
+secrets.yaml
+!tests/secrets.yaml
 *.private.yaml
+
+# Local working files (private configs, BLE packet captures, device logs)
+local/
+*.pcap
+*.pcapng
+*.btsnoop
+
+# ESPHome build artifacts
+.esphome/
+**/.pioenvs/
+**/.piolibdeps/
+**/.pio/

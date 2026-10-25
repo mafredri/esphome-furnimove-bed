@@ -1,0 +1,4 @@
+# Optional: also act as a Home Assistant Bluetooth proxy.
+# Proxy connections share esp32_ble.max_connections with the beds.
+bluetooth_proxy:
+  active: true
