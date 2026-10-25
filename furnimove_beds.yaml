@@ -111,10 +111,12 @@ esp32_ble_tracker:
       then:
         - lambda: |-
             ESP_LOGI("ble_adv", "Bed BLE device detected");
-            ESP_LOGI("ble_adv", "  Address: %s", x.address_str().c_str());
+            char addr_buf[MAC_ADDRESS_PRETTY_BUFFER_SIZE];
+            ESP_LOGI("ble_adv", "  Address: %s", x.address_str_to(addr_buf));
             ESP_LOGI("ble_adv", "  Name: %s", x.get_name().c_str());
             ESP_LOGI("ble_adv", "  RSSI: %d dBm", x.get_rssi());
             ESP_LOGD("ble_adv", "  Advertised service UUIDs:");
+            char uuid_buf[ble_device_base::UUID_STR_LEN];
             for (auto uuid : x.get_service_uuids()) {
-                ESP_LOGD("ble_adv", "    - %s", uuid.to_string().c_str());
+                ESP_LOGD("ble_adv", "    - %s", uuid.to_str(uuid_buf));
             }

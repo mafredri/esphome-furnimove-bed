@@ -155,7 +155,7 @@ script:
           else:
             - lambda: |-
                 id(${device_id}_ble_write_loop_end_time) = millis() + duration_ms;
-                ESP_LOGD("ble_write", "[${device_name}] Starting command 0x%X loop for %d ms, ends at %u millis", command, duration_ms, id(${device_id}_ble_write_loop_end_time));
+                ESP_LOGD("ble_write", "[${device_name}] Starting command 0x%X loop for %d ms, ends at %lu millis", command, duration_ms, id(${device_id}_ble_write_loop_end_time));
             - while:
                 condition:
                   lambda: |-
