@@ -1,0 +1,2 @@
+# Kept so ESPHome does not generate one that ignores the dummy secrets.yaml.
+/.esphome/

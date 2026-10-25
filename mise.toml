@@ -1,0 +1,61 @@
+[tools]
+# ESPHome's dependencies don't ship wheels for newer Python versions yet.
+python = "3.13"
+uv = "0.13.5"
+"pipx:esphome" = "2026.10.0"
+yamllint = "1.38.0"
+gitleaks = "8.30.1"
+actionlint = "1.7.12"
+shellcheck = "0.11.0" # Used by actionlint.
+
+[settings]
+pipx.uvx = true
+
+[env]
+# Override to test against another ESPHome release, e.g.
+# ESPHOME_CMD="uvx --prerelease=allow esphome" for the latest beta.
+ESPHOME_CMD = "{{ get_env(name='ESPHOME_CMD', default='esphome') }}"
+
+[tasks.setup]
+description = "Install tools and the git pre-commit hook"
+run = [
+  "mise install",
+  "mise generate git-pre-commit --write --task=pre-commit",
+]
+
+[tasks.lint]
+description = "Lint YAML and GitHub workflows, scan for leaked secrets"
+run = [
+  "yamllint --strict .",
+  "actionlint",
+  "gitleaks git --no-banner --redact",
+  # Staged changes, so leaks are caught before they're committed.
+  "gitleaks git --no-banner --redact --pre-commit --staged",
+]
+
+[tasks.validate]
+description = "Validate ESPHome test configurations"
+usage = 'arg "[config]" var=#true help="Test configs (default: all in tests/)"'
+run = '''
+set -eu
+configs="${usage_config:-$(ls tests/*.yaml | grep -v /secrets.yaml)}"
+$ESPHOME_CMD config $configs > /dev/null
+echo "Valid: $configs"
+'''
+
+[tasks.build]
+description = "Compile ESPHome test configurations"
+usage = 'arg "[config]" var=#true help="Test configs (default: all in tests/)"'
+run = '''
+set -eu
+configs="${usage_config:-$(ls tests/*.yaml | grep -v /secrets.yaml)}"
+$ESPHOME_CMD compile $configs
+'''
+
+[tasks.pre-commit]
+description = "Checks run by the git pre-commit hook"
+depends = ["lint", "validate"]
+
+[tasks.ci]
+description = "Everything CI runs"
+depends = ["lint", "validate", "build"]

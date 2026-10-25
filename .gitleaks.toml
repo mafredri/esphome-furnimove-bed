@@ -1,0 +1,21 @@
+# Extends the default gitleaks rules with a check for Bluetooth/Wi-Fi MAC
+# addresses, which identify your devices. Put real MACs in secrets.yaml.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "mac-address"
+description = "MAC address (use !secret instead)"
+regex = '''(?i)\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b'''
+keywords = [":"]
+
+[[rules.allowlists]]
+description = "Documentation placeholders"
+regexes = [
+  '''(?i)^00:11:22:33:44:[0-9a-f]{2}$''',
+  '''(?i)^(?:00:00:00:00:00:00|aa:aa:aa:aa:aa:aa|ff:ff:ff:ff:ff:ff)$''',
+]
+
+[[allowlists]]
+description = "Dummy CI secrets"
+paths = ['''^tests/secrets\.yaml$''']

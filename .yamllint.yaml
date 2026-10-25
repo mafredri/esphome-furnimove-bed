@@ -1,0 +1,15 @@
+extends: default
+
+ignore-from-file: .gitignore
+
+rules:
+  # ESPHome configs are not multi-document YAML files.
+  document-start: disable
+  # ESPHome lambdas and log strings are often long.
+  line-length: disable
+  # ESPHome uses "on_*" keys and True/False values.
+  truthy:
+    allowed-values: ["true", "false", "True", "False"]
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1

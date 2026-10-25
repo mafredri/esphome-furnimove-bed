@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly build against the latest ESPHome beta to catch breaking changes early.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # gitleaks scans the full history.
+      - uses: jdx/mise-action@v3
+      - run: mise run lint
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [tests/esp32-c3.yaml, tests/esp32-debug.yaml]
+        esphome: ${{ fromJSON(github.event_name == 'schedule' && '["pinned", "beta"]' || '["pinned"]') }}
+    name: build (${{ matrix.config }}, ${{ matrix.esphome }})
+    env:
+      ESPHOME_CMD: ${{ matrix.esphome == 'beta' && 'uvx --prerelease=allow esphome' || 'esphome' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v3
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            tests/.esphome
+          key: esphome-${{ matrix.esphome }}-${{ matrix.config }}-${{ hashFiles('mise.toml', 'packages/**') }}
+          restore-keys: esphome-${{ matrix.esphome }}-${{ matrix.config }}-
+      - run: mise run validate ${{ matrix.config }}
+      - run: mise run build ${{ matrix.config }}
