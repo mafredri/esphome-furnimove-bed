@@ -22,9 +22,6 @@ ota:
   - platform: esphome
     id: ota_esphome
 
-wifi:
-  ap:
-
 # Production logging: connection changes, commands and warnings only.
 # Add packages/debug.yaml for troubleshooting.
 logger:

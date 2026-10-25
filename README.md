@@ -34,6 +34,29 @@ The packages are pulled straight from this repository by ESPHome, so the only fi
 
 For other boards, replace the board package with your own `esp32:` block.
 
+### Device-specific options
+
+These go in your device configuration, next to `wifi:`:
+
+```yaml
+wifi:
+  # ...
+  # Fallback hotspot for changing Wi-Fi credentials when the configured
+  # network is unreachable (needs captive_portal). Without a password the
+  # hotspot is open and exposes the web server.
+  ap:
+    password: !secret bedroom_bed_fallback_ap_password
+
+captive_portal:
+
+esp32:
+  framework:
+    advanced:
+      # Only if the boot log suggests it ("Set flash_chip: generic ... to
+      # save IRAM"); the value depends on the flash chip of your board.
+      flash_chip: generic
+```
+
 ### Logging
 
 By default only connection changes, commands and warnings are logged. When troubleshooting, add `packages/debug.yaml` to log every BLE write and advertisement, and use the "Logger Level" select to lower the level again without reflashing.

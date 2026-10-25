@@ -102,14 +102,11 @@ ble_client:
         - lambda: |-
             ESP_LOGI("ble_client", "Connected to ${device_name} (${device_mac})");
             id(${device_id}_mac_address).publish_state("${device_mac}");
+        # The ble_client text sensors read their values by themselves once
+        # service discovery completes.
         - binary_sensor.template.publish:
             id: ${device_id}_connected
             state: True
-        - delay: 1s # Small delay to allow BLE services to stabilize.
-        - component.update: ${device_id}_name
-        - component.update: ${device_id}_manufacturer
-        - component.update: ${device_id}_model_number
-        - component.update: ${device_id}_serial_number
     on_disconnect:
       then:
         - lambda: |-
@@ -130,7 +127,7 @@ esp32_ble_tracker:
             }
 
 globals:
-  - id: ${device_id}_uder_bed_light_is_actually_on
+  - id: ${device_id}_under_bed_light_is_actually_on
     type: bool
     initial_value: "false"
   - id: ${device_id}_ble_write_loop_end_time
@@ -229,7 +226,7 @@ script:
       - delay: ${under_bed_light_timeout}
       - lambda: |-
           ESP_LOGI("under_bed_light", "[${device_name}] Under bed light timed out after ${under_bed_light_timeout}");
-          id(${device_id}_uder_bed_light_is_actually_on) = false;
+          id(${device_id}_under_bed_light_is_actually_on) = false;
           if (id(${device_id}_under_bed_light).state != false) {
             id(${device_id}_under_bed_light).publish_state(false);
           }
@@ -260,18 +257,18 @@ switch:
       sorting_group_id: bed_controls
       sorting_weight: 10
     lambda: |-
-      return id(${device_id}_uder_bed_light_is_actually_on);
+      return id(${device_id}_under_bed_light_is_actually_on);
     turn_on_action:
       # If the light is already on, we toggle it off and then back on
       # to reset the timeout.
       - if:
           condition:
-            lambda: "return id(${device_id}_uder_bed_light_is_actually_on);"
+            lambda: "return id(${device_id}_under_bed_light_is_actually_on);"
           then:
             - script.execute: ${device_id}_under_bed_light_toggle_script
       - script.execute: ${device_id}_under_bed_light_toggle_script
       - lambda: |-
-          id(${device_id}_uder_bed_light_is_actually_on) = true;
+          id(${device_id}_under_bed_light_is_actually_on) = true;
           if (id(${device_id}_under_bed_light).state != true) {
             id(${device_id}_under_bed_light).publish_state(true);
           }
@@ -282,11 +279,11 @@ switch:
       # timeout.
       - if:
           condition:
-            lambda: "return id(${device_id}_uder_bed_light_is_actually_on);"
+            lambda: "return id(${device_id}_under_bed_light_is_actually_on);"
           then:
             - script.execute: ${device_id}_under_bed_light_toggle_script
       - lambda: |-
-          id(${device_id}_uder_bed_light_is_actually_on) = false;
+          id(${device_id}_under_bed_light_is_actually_on) = false;
           if (id(${device_id}_under_bed_light).state != false) {
             id(${device_id}_under_bed_light).publish_state(false);
           }
