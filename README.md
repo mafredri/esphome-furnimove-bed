@@ -74,12 +74,14 @@ By default only connection changes, commands and warnings are logged. When troub
 Tooling is managed with [mise](https://mise.jdx.dev/):
 
 ```sh
-mise run setup     # install tools and the git pre-commit hook
-mise run lint      # yamllint, jactionlint, gitleaks
-mise run validate  # esphome config for tests/*.yaml
-mise run build     # esphome compile for tests/*.yaml
+mise run setup             # install tools and the git pre-commit hook
+mise run check             # every check except the firmware build
+mise run lint              # yamllint, jactionlint
+mise run security/secrets  # gitleaks on history and staged changes
+mise run test/config       # esphome config for tests/*.yaml
+mise run build/firmware    # esphome compile for tests/*.yaml
 ```
 
-`tests/` contains configurations equivalent to the example, using the local packages and dummy secrets. CI runs lint, validation and a full compile on every push and pull request, and weekly against the latest ESPHome beta.
+`tests/` contains configurations equivalent to the example, using the local packages and dummy secrets. CI runs `check` and a full compile on every push and pull request, and weekly against the latest ESPHome beta. Renovate keeps the GitHub Actions and the tools in `mise.toml` up to date.
 
 Never commit real MAC addresses or keys: put them in `secrets.yaml` (gitignored). gitleaks blocks MAC addresses other than documentation placeholders (`00:11:22:33:44:xx`). The gitignored `local/` folder is for private configuration variants, BLE packet captures and device logs.

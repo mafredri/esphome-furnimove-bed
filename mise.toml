@@ -1,12 +1,20 @@
+# Tools and tasks for development and CI (jdx/mise-action). Renovate updates
+# the tool versions in its CI tools group.
 [tools]
-# ESPHome's dependencies don't ship wheels for newer Python versions yet.
-python = "3.13"
+# ESPHome's dependencies don't ship wheels for newer Python versions yet;
+# .github/renovate.jsonc keeps Python on 3.13.
+python = "3.13.17"
 uv = "0.13.5"
 "pipx:esphome" = "2026.10.0"
 yamllint = "1.38.0"
 gitleaks = "8.30.1"
 jactionlint = "2.3.0"
 shellcheck = "0.11.0" # Used by jactionlint.
+node = "26.13.0"
+# @yarnpkg/libzip 3.2.2 was published by hand without the provenance
+# attestation that 3.2.0 and 3.2.1 have, which mise's npm trust policy rejects.
+# Its gitHead matches the upstream @yarnpkg/libzip/3.2.2 tag.
+"npm:renovate" = { version = "44.222.4", trust_policy_excludes = ["@yarnpkg/libzip@3.2.2"] }
 
 [settings]
 pipx.uvx = true
@@ -23,18 +31,38 @@ run = [
   "mise generate git-pre-commit --write --task=pre-commit",
 ]
 
+[tasks.check]
+description = "Run every check except the firmware build"
+depends = ["lint", "security/secrets", "test", "renovate/check"]
+
+[tasks.pre-commit]
+description = "Checks run by the git pre-commit hook"
+depends = ["lint", "security/secrets", "test"]
+
 [tasks.lint]
-description = "Lint YAML and GitHub workflows, scan for leaked secrets"
+description = "Lint YAML and GitHub workflows"
+depends = ["lint/yaml", "lint/actions"]
+
+[tasks."lint/yaml"]
+run = "yamllint --strict ."
+
+[tasks."lint/actions"]
+run = "jactionlint"
+
+# Scans commits, not the directory: the ignored local/ folder holds real
+# values that gitleaks dir would report.
+[tasks."security/secrets"]
+description = "Scan git history and staged changes for leaked secrets"
 run = [
-  "yamllint --strict .",
-  "jactionlint",
   "gitleaks git --no-banner --redact",
-  # Staged changes, so leaks are caught before they're committed.
   "gitleaks git --no-banner --redact --pre-commit --staged",
 ]
 
-[tasks.validate]
-description = "Validate ESPHome test configurations"
+[tasks.test]
+description = "Validate the ESPHome test configurations"
+depends = ["test/config"]
+
+[tasks."test/config"]
 usage = 'arg "[config]" var=#true help="Test configs (default: all in tests/)"'
 run = '''
 set -eu
@@ -43,8 +71,8 @@ $ESPHOME_CMD config $configs > /dev/null
 echo "Valid: $configs"
 '''
 
-[tasks.build]
-description = "Compile ESPHome test configurations"
+[tasks."build/firmware"]
+description = "Compile the ESPHome test configurations"
 usage = 'arg "[config]" var=#true help="Test configs (default: all in tests/)"'
 run = '''
 set -eu
@@ -52,10 +80,6 @@ configs="${usage_config:-$(ls tests/*.yaml | grep -v /secrets.yaml)}"
 $ESPHOME_CMD compile $configs
 '''
 
-[tasks.pre-commit]
-description = "Checks run by the git pre-commit hook"
-depends = ["lint", "validate"]
-
-[tasks.ci]
-description = "Everything CI runs"
-depends = ["lint", "validate", "build"]
+[tasks."renovate/check"]
+description = "Validate the Renovate config and check that it extracts dependencies"
+run = "renovate --platform=local --dry-run=extract --require-config=required --config-validation-error=true --onboarding=false"

@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0 # gitleaks scans the full history.
           persist-credentials: false
       - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
-      - run: mise run lint
+      - run: mise run check
 
   build:
     runs-on: ubuntu-latest
@@ -36,7 +36,6 @@ jobs:
       matrix:
         config: [tests/esp32-c3.yaml, tests/esp32-debug.yaml]
         esphome: ${{ fromJSON(github.event_name == 'schedule' && '["pinned", "beta"]' || '["pinned"]') }}
-    name: build (${{ matrix.config }}, ${{ matrix.esphome }})
     env:
       ESPHOME_CMD: ${{ matrix.esphome == 'beta' && 'uvx --prerelease=allow esphome' || 'esphome' }}
     steps:
@@ -51,5 +50,5 @@ jobs:
             tests/.esphome
           key: esphome-${{ matrix.esphome }}-${{ matrix.config }}-${{ hashFiles('mise.toml', 'packages/**') }}
           restore-keys: esphome-${{ matrix.esphome }}-${{ matrix.config }}-
-      - run: mise run validate ${{ matrix.config }}
-      - run: mise run build ${{ matrix.config }}
+      - run: mise run test/config ${{ matrix.config }}
+      - run: mise run build/firmware ${{ matrix.config }}
