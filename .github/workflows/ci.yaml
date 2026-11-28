@@ -5,7 +5,8 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    # Weekly build against the latest ESPHome beta to catch breaking changes early.
+    # Weekly build against the latest ESPHome beta and dev to catch breaking
+    # changes early.
     - cron: "0 6 * * 1"
   workflow_dispatch:
 
@@ -35,9 +36,15 @@ jobs:
       fail-fast: false
       matrix:
         config: [tests/esp32-c3.yaml, tests/esp32-debug.yaml]
-        esphome: ${{ fromJSON(github.event_name == 'schedule' && '["pinned", "beta"]' || '["pinned"]') }}
+        esphome: ${{ fromJSON(github.event_name == 'schedule' && '["pinned", "beta", "dev"]' || '["pinned"]') }}
     env:
-      ESPHOME_CMD: ${{ matrix.esphome == 'beta' && 'uvx --prerelease=allow esphome' || 'esphome' }}
+      # Breaking changes land on ESPHome dev weeks before the beta.
+      ESPHOME_CMD: >-
+        ${{
+          matrix.esphome == 'beta' && 'uvx --prerelease=allow esphome' ||
+          matrix.esphome == 'dev' && 'uvx --from https://github.com/esphome/esphome/archive/refs/heads/dev.tar.gz esphome' ||
+          'esphome'
+        }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
