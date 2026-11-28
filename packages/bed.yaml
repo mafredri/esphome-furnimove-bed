@@ -17,6 +17,8 @@ esphome:
     - id: ${device_id}_bed_device
       name: "${device_name} Bed"
       area_id: ${area_id}
+      # The bed motor is a separate physical device reached over BLE.
+      relation: via
 
 binary_sensor:
   - platform: template

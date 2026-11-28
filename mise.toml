@@ -5,7 +5,7 @@
 # .github/renovate.jsonc keeps Python on 3.13.
 python = "3.13.17"
 uv = "0.13.5"
-"pipx:esphome" = "2026.10.0"
+"pipx:esphome" = "2026.11.1"
 yamllint = "1.38.0"
 gitleaks = "8.30.1"
 jactionlint = "2.3.0"
@@ -67,7 +67,14 @@ usage = 'arg "[config]" var=#true help="Test configs (default: all in tests/)"'
 run = '''
 set -eu
 configs="${usage_config:-$(ls tests/*.yaml | grep -v /secrets.yaml)}"
-$ESPHOME_CMD config $configs > /dev/null
+# esphome config prints the validated config, or the failed config with the
+# validation errors, to stdout: only show it on failure.
+out="$(mktemp)"
+trap 'rm -f "$out"' EXIT
+if ! $ESPHOME_CMD config $configs > "$out"; then
+  cat "$out"
+  exit 1
+fi
 echo "Valid: $configs"
 '''
 

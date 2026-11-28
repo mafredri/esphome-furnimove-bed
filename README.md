@@ -82,6 +82,6 @@ mise run test/config       # esphome config for tests/*.yaml
 mise run build/firmware    # esphome compile for tests/*.yaml
 ```
 
-`tests/` contains configurations equivalent to the example, using the local packages and dummy secrets. CI runs `check` and a full compile on every push and pull request, and weekly against the latest ESPHome beta. Renovate keeps the GitHub Actions and the tools in `mise.toml` up to date.
+`tests/` contains configurations equivalent to the example, using the local packages and dummy secrets. CI runs `check` and a full compile on every push and pull request, and weekly against the latest ESPHome beta and the ESPHome `dev` branch. Renovate keeps the GitHub Actions and the tools in `mise.toml` up to date.
 
 Never commit real MAC addresses or keys: put them in `secrets.yaml` (gitignored). gitleaks blocks MAC addresses other than documentation placeholders (`00:11:22:33:44:xx`). The gitignored `local/` folder is for private configuration variants, BLE packet captures and device logs.

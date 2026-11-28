@@ -11,7 +11,8 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  min_version: 2026.8.0
+  # 2026.11.0 requires relation on sub-devices (packages/bed.yaml).
+  min_version: 2026.11.0
   areas:
     - id: bed_area
       name: ${area_name}
