@@ -5,7 +5,7 @@
 # .github/renovate.jsonc keeps Python on 3.13.
 python = "3.13.17"
 uv = "0.13.5"
-"pipx:esphome" = "2026.10.0"
+"pipx:esphome" = "2026.11.1"
 yamllint = "1.38.0"
 gitleaks = "8.30.1"
 jactionlint = "2.3.0"
