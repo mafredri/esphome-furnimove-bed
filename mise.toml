@@ -67,7 +67,14 @@ usage = 'arg "[config]" var=#true help="Test configs (default: all in tests/)"'
 run = '''
 set -eu
 configs="${usage_config:-$(ls tests/*.yaml | grep -v /secrets.yaml)}"
-$ESPHOME_CMD config $configs > /dev/null
+# esphome config prints the validated config, or the failed config with the
+# validation errors, to stdout: only show it on failure.
+out="$(mktemp)"
+trap 'rm -f "$out"' EXIT
+if ! $ESPHOME_CMD config $configs > "$out"; then
+  cat "$out"
+  exit 1
+fi
 echo "Valid: $configs"
 '''
 
