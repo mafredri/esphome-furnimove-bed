@@ -23,7 +23,21 @@
       "matchManagers": [
         "mise"
       ],
-      "groupName": "CI tools"
+      "matchPackageNames": [
+        "!esphome"
+      ],
+      "groupName": "dev tools"
+    },
+    {
+      // The packages target ESPHome, and its releases can break them, so
+      // each one gets its own pull request.
+      "matchManagers": [
+        "mise"
+      ],
+      "matchPackageNames": [
+        "esphome"
+      ],
+      "commitMessageTopic": "ESPHome"
     },
     {
       // ESPHome's dependencies had no wheels for Python 3.15; 3.14 is untested.

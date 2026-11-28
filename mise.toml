@@ -1,5 +1,5 @@
 # Tools and tasks for development and CI (jdx/mise-action). Renovate updates
-# the tool versions in its CI tools group.
+# ESPHome on its own and the other tools in its dev tools group.
 [tools]
 # ESPHome's dependencies don't ship wheels for newer Python versions yet;
 # .github/renovate.jsonc keeps Python on 3.13.
